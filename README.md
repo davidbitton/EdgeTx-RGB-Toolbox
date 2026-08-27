@@ -47,4 +47,5 @@ RGB LED control tool for EdgeTX 2.11+ radios.
 ## Notes
 
 - Requires EdgeTX 2.11 or newer.
+- Animates decorative gimbal / "bling" LEDs only (20 LEDs on TX16S Mk3, GX15 and TX15). Custom function switch RGB colours stay under Radio/Model settings.
 - The keeper polls `/SCRIPTS/TOOLS/RGB.dat` and runs the selected mode, so no other mode scripts are needed.

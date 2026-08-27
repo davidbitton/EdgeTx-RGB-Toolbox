@@ -3,7 +3,8 @@
 local LED_DIR = "/SCRIPTS/RGBLED"
 local CFG_FILE = "/SCRIPTS/TOOLS/RGB.dat"
 -- Native "RGB Led" special function: loads <name>.lua from /SCRIPTS/RGBLED/
-local FUNC_RGB_LED = 25
+-- Prefer the firmware constant so a future enum shift does not break setup.
+local RGB_LED_FUNC = (type(FUNC_RGB_LED) == "number") and FUNC_RGB_LED or 25
 -- Fixed Special Function slot for the keeper script (SF64 = index 63)
 local SF_SLOT = 63
 local KEEPER_NAME = "rgbk"
@@ -156,7 +157,7 @@ end
 local function keeperInstalled()
   if type(model.getCustomFunction) ~= "function" then return false end
   local cur = model.getCustomFunction(SF_SLOT)
-  return cur ~= nil and cur.func == FUNC_RGB_LED and cur.name == KEEPER_NAME and cur.active == 1
+  return cur ~= nil and cur.func == RGB_LED_FUNC and cur.name == KEEPER_NAME and cur.active == 1
 end
 
 -- Install the keeper Special Function once. After it exists (and is enabled)
@@ -169,7 +170,7 @@ local function ensureKeeper()
     return
   end
   local cur = model.getCustomFunction(SF_SLOT)
-  local ours = cur ~= nil and cur.func == FUNC_RGB_LED and cur.name == KEEPER_NAME
+  local ours = cur ~= nil and cur.func == RGB_LED_FUNC and cur.name == KEEPER_NAME
   if cur ~= nil and type(cur.func) == "number" and cur.func ~= 0 and not ours then
     lvgl.message({ title = "SF64 in use",
       message = "Special Function SF64 is already assigned to a different function. Free it to let the RGB LED tool use it." })
@@ -182,7 +183,7 @@ local function ensureKeeper()
   end
   model.setCustomFunction(SF_SLOT, {
     switch = onSwitch,
-    func = FUNC_RGB_LED,
+    func = RGB_LED_FUNC,
     name = KEEPER_NAME,
     active = 1,
   })

@@ -15,7 +15,22 @@
 -- on-screen preview matches exactly what the keeper runs on the radio.
 
 local CFG = "/SCRIPTS/TOOLS/RGB.dat"
-local N = LED_STRIP_LENGTH or 0
+
+-- Decorative ("bling") LEDs only. Firmware maps Lua index 0 to the first
+-- gimbal/bling LED. Older builds reported LED_STRIP_LENGTH as bling+CFS
+-- (26 on TX16S Mk3 / GX15 / TX15). Function-switch LEDs stay under model
+-- on/off colours / setCFSLedColor() and must not be painted here.
+local function decorativeLength()
+  if type(BLING_LED_STRIP_LENGTH) == "number" and BLING_LED_STRIP_LENGTH > 0 then
+    return BLING_LED_STRIP_LENGTH
+  end
+  local n = LED_STRIP_LENGTH or 0
+  -- 20 bling + 6 CFS: the dual-ring radios this tool was written for.
+  if n == 26 then return 20 end
+  return n
+end
+
+local N = decorativeLength()
 local HALF = math.floor(N / 2)
 
 local curSel = nil
