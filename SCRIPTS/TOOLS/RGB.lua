@@ -13,6 +13,7 @@ local CUSTOM_PREFIX = "custom:"
 
 local exitRequested = false
 local noLvgl = false
+local noLeds = type(setRGBLedColor) ~= "function" or type(applyRGBLedColors) ~= "function"
 local selected = nil
 local subtitle = ""
 local buttons = {}
@@ -229,8 +230,10 @@ end
 local function selectMode(name)
   selected = name
   saveSelection(name)
-  preview(name)
-  ensureKeeper()
+  if not noLeds then
+    preview(name)
+    ensureKeeper()
+  end
   for key, _ in pairs(buttons) do
     setChecked(key, key == name)
   end
@@ -255,8 +258,14 @@ local function buildUi()
   local MARGIN = 8
   local GAP = 6
   local LABEL_H = 28
-
   local y = MARGIN
+
+  if noLeds then
+    pg:label({ x = MARGIN, y = y, w = W - 2 * MARGIN,
+      text = "This radio has no RGB LED strip (setRGBLedColor missing).",
+      color = COLOR_THEME_WARNING })
+    y = y + LABEL_H + GAP
+  end
 
   local offBtn = pg:button({ x = MARGIN, y = y, w = W - 2 * MARGIN, h = EH,
     text = "Off",
@@ -273,8 +282,9 @@ local function buildUi()
     text = "Setup Background Script on Model",
     color = function() return rgbValue({ r = 30, g = 120, b = 255 }, true) end,
     textColor = function() return rgbValue({ r = 30, g = 120, b = 255 }, false) end,
-    active = function() return not keeperInstalled() end,
+    active = function() return not noLeds and not keeperInstalled() end,
     press = function()
+      if noLeds then return end
       ensureKeeper()
       if keeperInstalled() then
         lvgl.message({ title = "Background Script Installed",
@@ -342,6 +352,11 @@ local function init()
   if ok and info and type(info) == "table" then
     subtitle = info.name or ""
   end
+  if type(BLING_LED_STRIP_LENGTH) == "number" and BLING_LED_STRIP_LENGTH > 0 then
+    subtitle = (subtitle ~= "" and (subtitle .. " · ") or "") .. tostring(BLING_LED_STRIP_LENGTH) .. " LEDs"
+  elseif type(LED_STRIP_LENGTH) == "number" and LED_STRIP_LENGTH > 0 then
+    subtitle = (subtitle ~= "" and (subtitle .. " · ") or "") .. tostring(LED_STRIP_LENGTH) .. " LEDs"
+  end
   if lvgl == nil then
     noLvgl = true
     return
@@ -366,7 +381,7 @@ local function run(event, touchState)
     end
     return 0
   end
-  if selected then
+  if not noLeds and selected then
     preview(selected)
   end
   if exitRequested then

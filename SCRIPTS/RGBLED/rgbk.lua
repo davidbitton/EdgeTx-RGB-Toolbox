@@ -17,21 +17,40 @@
 local CFG = "/SCRIPTS/TOOLS/RGB.dat"
 
 -- Decorative ("bling") LEDs only. Firmware maps Lua index 0 to the first
--- gimbal/bling LED. Older builds reported LED_STRIP_LENGTH as bling+CFS
--- (26 on TX16S Mk3 / GX15 / TX15). Function-switch LEDs stay under model
--- on/off colours / setCFSLedColor() and must not be painted here.
+-- gimbal/bling LED. Function-switch LEDs stay under model on/off colours /
+-- setCFSLedColor() and must not be painted here.
 local function decorativeLength()
   if type(BLING_LED_STRIP_LENGTH) == "number" and BLING_LED_STRIP_LENGTH > 0 then
     return BLING_LED_STRIP_LENGTH
   end
   local n = LED_STRIP_LENGTH or 0
-  -- 20 bling + 6 CFS: the dual-ring radios this tool was written for.
+  if type(CFS_LED_STRIP_LENGTH) == "number" and CFS_LED_STRIP_LENGTH > 0 and n >= CFS_LED_STRIP_LENGTH then
+    return n - CFS_LED_STRIP_LENGTH
+  end
+  -- Pre-constant firmware: TX16S Mk3 / GX15 / TX15 report 20 bling + 6 CFS.
   if n == 26 then return 20 end
   return n
 end
 
 local N = decorativeLength()
-local HALF = math.floor(N / 2)
+local HALF = math.max(1, math.floor(N / 2))
+
+-- Bound every write to the decorative range so leftover CFS indices are never
+-- touched, even if a pattern hardcodes a 10+10 gimbal layout.
+local _setRGB = setRGBLedColor
+local _applyRGB = applyRGBLedColors
+
+local function setRGBLedColor(id, r, g, b)
+  if type(_setRGB) ~= "function" then return false end
+  if type(id) ~= "number" or id < 0 or id >= N then return false end
+  return _setRGB(id, r, g, b)
+end
+
+local function applyRGBLedColors()
+  if type(_applyRGB) == "function" then
+    _applyRGB()
+  end
+end
 
 local curSel = nil
 local runFn = nil
